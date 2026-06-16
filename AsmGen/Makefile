@@ -9,6 +9,11 @@ CC := gcc
 TIMING ?= ns
 ARCH ?= all
 USE_KLIB ?= no
+DOTNET_CLI_HOME ?= /tmp/uarchtest-dotnet-home
+DOTNET_SKIP_FIRST_TIME_EXPERIENCE ?= 1
+DOTNET_CLI_TELEMETRY_OPTOUT ?= 1
+DOTNET_NOLOGO ?= 1
+DOTNET_ENV := DOTNET_CLI_HOME=$(DOTNET_CLI_HOME) DOTNET_SKIP_FIRST_TIME_EXPERIENCE=$(DOTNET_SKIP_FIRST_TIME_EXPERIENCE) DOTNET_CLI_TELEMETRY_OPTOUT=$(DOTNET_CLI_TELEMETRY_OPTOUT) DOTNET_NOLOGO=$(DOTNET_NOLOGO)
 CFLAGS := -O2
 
 # Cross-compilers
@@ -34,16 +39,16 @@ check-dotnet:
 all: check-dotnet
 	@echo "Generating and compiling combined tests (arch: $(ARCH), timing: $(TIMING), klib: $(USE_KLIB))..."
 	@$(if $(filter yes,$(USE_KLIB)), \
-		dotnet run --target-arch $(ARCH) --timing $(TIMING) --use-klib, \
-		dotnet run --target-arch $(ARCH) --timing $(TIMING))
+		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) --use-klib, \
+		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING))
 	@$(MAKE) compile
 
 # Generate and compile separate tests  
 separate: check-dotnet
 	@echo "Generating and compiling separate tests (arch: $(ARCH), timing: $(TIMING), klib: $(USE_KLIB))..."
 	@$(if $(filter yes,$(USE_KLIB)), \
-		dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) --use-klib, \
-		dotnet run --separate --target-arch $(ARCH) --timing $(TIMING))
+		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) --use-klib, \
+		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING))
 	@$(MAKE) compile_separate
 
 compile_x86:

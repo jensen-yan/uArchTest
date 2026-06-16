@@ -5,3 +5,4 @@ clammicrobench_riscv.s
 clammicrobench_arm
 clammicrobench_x86
 clammicrobench_riscv
+generate/
