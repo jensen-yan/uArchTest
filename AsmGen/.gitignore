@@ -1,0 +1,7 @@
+clammicrobench.c
+clammicrobench_arm.s
+clammicrobench_x86.s
+clammicrobench_riscv.s
+clammicrobench_arm
+clammicrobench_x86
+clammicrobench_riscv
