@@ -1,6 +1,11 @@
 # AsmGen
 
-AsmGen is a subproject designed to generate assembly code and compile it for different architectures, specifically x86 and ARM. The primary goal of AsmGen is to facilitate the testing and benchmarking of various microarchitectural features through a series of predefined tests. This project is particularly useful for developers and researchers interested in performance analysis and optimization at the assembly level.
+AsmGen is a subproject designed to generate assembly code and compile it for
+different architectures. x86 has the broadest coverage; ARM and RISC-V have
+partial coverage, with the basic integer, memory-queue, branch, and throughput
+tests being the most useful starting points. The primary goal of AsmGen is to
+facilitate the testing and benchmarking of various microarchitectural features
+through a series of predefined tests.
 
 ## Project Overview
 
@@ -23,6 +28,7 @@ Before you begin, ensure you have the following installed on your system：
 - **Cross Compile**:
   - For x86-64: `gcc-x86-64-linux-gnu`
   - For ARM (AArch64): `gcc-aarch64-linux-gnu`
+  - For RISC-V: `riscv64-unknown-linux-gnu-gcc`
 
 ### Ubuntu (APT)
 
@@ -76,15 +82,19 @@ To build the project, you can use the provided Makefile. Follow these steps:
 
 1. Navigate to the project directory.
 
-2. Run the following command to compile the project for both x86 and ARM architectures:
+2. Run one of the following commands:
    ```bash
-   make
+   make ARCH=x86
+   make ARCH=riscv TIMING=cycle ONLY=nopbw
    ```
 
 This will execute the following steps:
 - Check if the dotnet CLI is installed.
 - Generate the necessary files using `dotnet run`.
-- Compile the generated files for x86 and ARM architectures.
+- Compile the generated files for the selected architecture.
+
+`ONLY=<prefix>` is useful for simulator experiments because the full combined
+benchmark generates very large assembly files.
 
 ### Clean Up
 
@@ -105,6 +115,12 @@ or
 
 ```bash
 ./clammicrobench_arm [test name] [latency list size] [struct iterations]
+```
+
+or
+
+```bash
+./clammicrobench_riscv [test name] [struct iterations]
 ```
 
 ### Parameters

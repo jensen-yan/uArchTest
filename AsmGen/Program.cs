@@ -30,6 +30,7 @@ namespace AsmGen
             string targetArch = "all"; // Default to all architectures
             string timingMode = "ns"; // Default to nanosecond timing
             bool useKlib = false; // Default to standard library
+            string onlyPrefix = null;
             
             for (int i = 0; i < args.Length; i++)
             {
@@ -50,6 +51,11 @@ namespace AsmGen
                 else if (args[i] == "--use-klib")
                 {
                     useKlib = true;
+                }
+                else if (args[i] == "--only" && i + 1 < args.Length)
+                {
+                    onlyPrefix = args[i + 1];
+                    i++; // Skip the next argument as it's the test prefix filter
                 }
                 else if (args[i] == "--help" || args[i] == "-h")
                 {
@@ -122,6 +128,20 @@ namespace AsmGen
             tests.Add(new MulLatency(512, 512, 1));
             tests.Add(new LoadLatency(512, 512, 1));
 
+            if (!string.IsNullOrEmpty(onlyPrefix))
+            {
+                tests = tests
+                    .Where(test => test.Prefix.StartsWith(onlyPrefix, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (tests.Count == 0)
+                {
+                    Console.WriteLine($"Error: no tests matched --only {onlyPrefix}");
+                    return;
+                }
+                Console.WriteLine($"Test Filter: {onlyPrefix} ({tests.Count} matched)");
+            }
+
             // Create generate directory
             string generateDir = "generate";
             if (!Directory.Exists(generateDir))
@@ -150,6 +170,7 @@ namespace AsmGen
             Console.WriteLine("  --separate, -s              Generate separate files for each test");
             Console.WriteLine("  --target-arch <arch>        Target architecture: all, x86, arm, riscv (default: all)");
             Console.WriteLine("  --timing <mode>             Timing mode: ns, cycle (default: ns)");
+            Console.WriteLine("  --only <prefix>             Generate tests whose prefix starts with this value");
             Console.WriteLine("  --use-klib                  Use klib.h instead of standard library headers");
             Console.WriteLine("  --help, -h                  Show this help message");
             Console.WriteLine();
@@ -164,6 +185,7 @@ namespace AsmGen
             Console.WriteLine("Examples:");
             Console.WriteLine("  dotnet run                                           # Generate combined tests for all architectures (ns timing, std lib)");
             Console.WriteLine("  dotnet run --target-arch riscv --timing cycle       # Generate combined tests for RISC-V with cycle timing");
+            Console.WriteLine("  dotnet run --target-arch riscv --timing cycle --only nopbw");
             Console.WriteLine("  dotnet run --separate --target-arch x86 --use-klib  # Generate separate tests for x86 with klib");
             Console.WriteLine("  dotnet run --use-klib --timing cycle                # Generate combined tests with klib and cycle timing");
         }

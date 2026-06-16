@@ -8,6 +8,7 @@ default: all
 CC := gcc
 TIMING ?= ns
 ARCH ?= all
+ONLY ?=
 USE_KLIB ?= no
 DOTNET_CLI_HOME ?= /tmp/uarchtest-dotnet-home
 DOTNET_SKIP_FIRST_TIME_EXPERIENCE ?= 1
@@ -37,18 +38,18 @@ check-dotnet:
 
 # Generate and compile combined tests
 all: check-dotnet
-	@echo "Generating and compiling combined tests (arch: $(ARCH), timing: $(TIMING), klib: $(USE_KLIB))..."
+	@echo "Generating and compiling combined tests (arch: $(ARCH), timing: $(TIMING), only: $(if $(ONLY),$(ONLY),all), klib: $(USE_KLIB))..."
 	@$(if $(filter yes,$(USE_KLIB)), \
-		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) --use-klib, \
-		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING))
+		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) --use-klib, \
+		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),))
 	@$(MAKE) compile
 
 # Generate and compile separate tests  
 separate: check-dotnet
-	@echo "Generating and compiling separate tests (arch: $(ARCH), timing: $(TIMING), klib: $(USE_KLIB))..."
+	@echo "Generating and compiling separate tests (arch: $(ARCH), timing: $(TIMING), only: $(if $(ONLY),$(ONLY),all), klib: $(USE_KLIB))..."
 	@$(if $(filter yes,$(USE_KLIB)), \
-		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) --use-klib, \
-		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING))
+		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) --use-klib, \
+		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),))
 	@$(MAKE) compile_separate
 
 compile_x86:
@@ -64,16 +65,16 @@ compile_riscv:
 compile:
 	@echo "Compiling combined tests..."
 	@cd generate && \
-	if [ -f clammicrobench_x86.S ]; then \
-		$(CROSS_COMPILE_X86_64)$(CC) $(CFLAGS) clammicrobench.c clammicrobench_x86.S latency_test_data.S -o clammicrobench_x86 $(LDFLAGS); \
+	if { [ "$(ARCH)" = "all" ] || [ "$(ARCH)" = "x86" ]; } && [ -f clammicrobench_x86.S ]; then \
+		$(CROSS_COMPILE_X86_64)$(CC) $(CFLAGS) clammicrobench.c clammicrobench_x86.S latency_test_data.S -o clammicrobench_x86 $(LDFLAGS) && \
 		echo "Built clammicrobench_x86"; \
 	fi && \
-	if [ -f clammicrobench_arm.S ]; then \
-		$(CROSS_COMPILE_AARCH64)$(CC) $(CFLAGS) clammicrobench.c clammicrobench_arm.S latency_test_data.S -o clammicrobench_arm $(LDFLAGS); \
+	if { [ "$(ARCH)" = "all" ] || [ "$(ARCH)" = "arm" ]; } && [ -f clammicrobench_arm.S ]; then \
+		$(CROSS_COMPILE_AARCH64)$(CC) $(CFLAGS) clammicrobench.c clammicrobench_arm.S latency_test_data.S -o clammicrobench_arm $(LDFLAGS) && \
 		echo "Built clammicrobench_arm"; \
 	fi && \
-	if [ -f clammicrobench_riscv.S ]; then \
-		$(CROSS_COMPILE_RISCV64)$(CC) $(CFLAGS) clammicrobench.c clammicrobench_riscv.S latency_test_data.S -o clammicrobench_riscv $(LDFLAGS); \
+	if { [ "$(ARCH)" = "all" ] || [ "$(ARCH)" = "riscv" ]; } && [ -f clammicrobench_riscv.S ]; then \
+		$(CROSS_COMPILE_RISCV64)$(CC) $(CFLAGS) clammicrobench.c clammicrobench_riscv.S latency_test_data.S -o clammicrobench_riscv $(LDFLAGS) && \
 		echo "Built clammicrobench_riscv"; \
 	fi
 
@@ -84,15 +85,15 @@ compile_separate:
 		if [ -d "{}" ]; then \
 			test_name=$$(basename "{}"); \
 			cd "{}" && \
-			if [ -f "$${test_name}_test_x86.S" ]; then \
+			if { [ "$(ARCH)" = "all" ] || [ "$(ARCH)" = "x86" ]; } && [ -f "$${test_name}_test_x86.S" ]; then \
 				$(CROSS_COMPILE_X86_64)$(CC) $(CFLAGS) "$${test_name}_test.c" "$${test_name}_test_x86.S" latency_test_data.S -o "$${test_name}_test_x86" $(LDFLAGS) && \
 				echo "Built $${test_name}_test_x86"; \
 			fi && \
-			if [ -f "$${test_name}_test_arm.S" ]; then \
+			if { [ "$(ARCH)" = "all" ] || [ "$(ARCH)" = "arm" ]; } && [ -f "$${test_name}_test_arm.S" ]; then \
 				$(CROSS_COMPILE_AARCH64)$(CC) $(CFLAGS) "$${test_name}_test.c" "$${test_name}_test_arm.S" latency_test_data.S -o "$${test_name}_test_arm" $(LDFLAGS) && \
 				echo "Built $${test_name}_test_arm"; \
 			fi && \
-			if [ -f "$${test_name}_test_riscv.S" ]; then \
+			if { [ "$(ARCH)" = "all" ] || [ "$(ARCH)" = "riscv" ]; } && [ -f "$${test_name}_test_riscv.S" ]; then \
 				$(CROSS_COMPILE_RISCV64)$(CC) $(CFLAGS) "$${test_name}_test.c" "$${test_name}_test_riscv.S" latency_test_data.S -o "$${test_name}_test_riscv" $(LDFLAGS) && \
 				echo "Built $${test_name}_test_riscv"; \
 			fi \
@@ -105,7 +106,7 @@ clean:
 
 # Help
 help:
-	@echo "Usage: make [target] [ARCH=arch] [TIMING=timing] [USE_KLIB=yes/no]"
+	@echo "Usage: make [target] [ARCH=arch] [TIMING=timing] [ONLY=test-prefix] [USE_KLIB=yes/no]"
 	@echo ""
 	@echo "Targets:"
 	@echo "  all      - Generate and compile combined tests (default)"
@@ -116,6 +117,7 @@ help:
 	@echo "Variables:"
 	@echo "  ARCH     - Target architecture: all, x86, arm, riscv (default: all)"
 	@echo "  TIMING   - Timing mode: ns, cycle (default: ns)"
+	@echo "  ONLY     - Generate only tests with this prefix (for example: nopbw)"
 	@echo "  USE_KLIB - Use klib instead of standard library: yes, no (default: no)"
 	@echo ""
 	@echo "Library modes:"
@@ -125,6 +127,7 @@ help:
 	@echo "Examples:"
 	@echo "  make                                    # Build combined tests for all architectures (std lib)"
 	@echo "  make ARCH=riscv TIMING=cycle            # Build combined RISC-V tests with cycle timing"
+	@echo "  make ARCH=riscv TIMING=cycle ONLY=nopbw # Build one small RISC-V test"
 	@echo "  make separate ARCH=x86 USE_KLIB=yes     # Build separate x86 tests with klib"
 	@echo "  make USE_KLIB=yes TIMING=cycle          # Build combined tests with klib and cycle timing"
 	@echo "  make clean                              # Clean all files"

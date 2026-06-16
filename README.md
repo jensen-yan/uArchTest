@@ -56,6 +56,25 @@ make -C MemoryLatency compile_riscv
 make -C AsmGen ARCH=x86
 ```
 
+For `AsmGen` RISC-V experiments in gem5, start with one generated test instead
+of the full combined benchmark. The full RISC-V assembly file is very large and
+slow to compile.
+
+```bash
+make -C AsmGen clean
+make -C AsmGen ARCH=riscv TIMING=cycle ONLY=nopbw
+```
+
+Then run the generated binary with gem5 SE, for example:
+
+```bash
+/path/to/gem5.opt -d /tmp/uarchtest-nopbw \
+  /path/to/configs/example/se.py \
+  --no-pf -I 5000000 \
+  --cmd=$PWD/AsmGen/generate/clammicrobench_riscv \
+  --options="nopbw 10"
+```
+
 Clean generated binaries:
 
 ```bash
