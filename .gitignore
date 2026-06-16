@@ -64,6 +64,11 @@ dlldata.c
 # Benchmark Results
 BenchmarkDotNet.Artifacts/
 
+# Local benchmark result artifacts. Keep curated markdown notes, but leave
+# raw tables/manifests/logs in the working tree.
+results/**/*.tsv
+results/**/manifest.txt
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json
