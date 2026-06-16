@@ -1,82 +1,80 @@
 # uArchTest
 
-## Overview
+uArchTest is a collection of CPU microarchitecture benchmarks derived from
+[Chips and Cheese Microbenchmarks](https://github.com/ChipsandCheese/Microbenchmarks).
+It uses C plus handwritten or generated assembly to probe frontend, execution,
+memory, clock, and coherency behavior.
 
-uArchTest is a comprehensive collection of subprojects aimed at measuring and analyzing various performance metrics across different architectures, specifically x86 and ARM. This suite is designed for developers and researchers interested in performance optimization, benchmarking, and microarchitectural analysis. The suite includes six distinct subprojects, each focusing on a specific aspect of performance evaluation.
+## Components
+
+- `AsmGen`: .NET-based generator for combined or per-test assembly benchmarks.
+  It covers ROB, LDQ/STQ, register files, schedulers, BTB, branch history,
+  indirect branches, return stack, throughput, and latency chains.
+- `MemoryLatency`: cache/TLB/MLP/store-to-load-forwarding latency tests.
+- `MemoryBandwidth`: data and instruction bandwidth tests, including threaded
+  read/write/copy modes.
+- `InstructionRate`: ISA instruction throughput and latency tests.
+- `CoreClockChecker`: per-core clock and optional MSR/RAPL power checks.
+- `CoherencyLatency`: pthread-based core-to-core cache-line handoff latency.
 
 ## Prerequisites
 
-Before building and running the uArchTest suite, ensure that you have the following prerequisites installed on your system:
+- `make`
+- x86 compiler: `x86_64-linux-gnu-gcc`
+- optional ARM compiler: `aarch64-linux-gnu-gcc`
+- optional RISC-V compiler: `riscv64-unknown-linux-gnu-gcc`
+- optional .NET SDK 8 for `AsmGen`
 
-- **C Compiler**: A C compiler such as GCC or Clang is required to compile the C source files.
-- **Make**: The `make` utility is needed to build the projects using the provided Makefile.
-- **Assembly Tools**: For projects that involve assembly code, ensure you have the necessary tools (e.g., `as` for assembling).
-- **POSIX Threads**: Ensure that your system supports POSIX threads, especially for the Memory Bandwidth Benchmark project.
-- **Development Libraries**: Depending on your system, you may need to install development libraries for threading and other functionalities.
+If the RISC-V compiler is configured only in `~/.zshrc`, run the build from zsh
+or export the same PATH first. To build `AsmGen`, install .NET SDK 8; with Nix,
+`nix-env -iA nixpkgs.dotnet-sdk` is sufficient.
 
-## Subprojects
+## Build
 
-### 1. AsmGen
-AsmGen is a tool for generating assembly code and compiling it for x86 and ARM architectures. It facilitates testing and benchmarking of microarchitectural features through predefined tests, making it an essential resource for performance analysis at the assembly level.
+Build the x86 benchmark set:
 
-### 2. CoherencyLatency
-The CoherencyLatency project measures and analyzes the latency of thread synchronization mechanisms in multi-threaded environments. It focuses on PThreads, providing a cross-platform application that can be compiled for both x86 and ARM architectures.
+```bash
+make
+# same as:
+make compile_x86
+```
 
-### 3. CoreClockChecker
-CoreClockChecker is designed to measure clock frequency on x86 and ARM architectures. It consists of two main components: `CoreClockChecker` and `BoostClockChecker`, allowing developers to evaluate clock performance across different hardware platforms.
+If `dotnet` is not installed, the top-level build skips `AsmGen` and still builds
+the C/assembly subprojects.
 
-### 4. InstructionRate
-The InstructionRate project measures and analyzes the instruction execution rate on x86 and ARM architectures. It provides insights into the performance characteristics of various instruction sets, helping developers optimize their code for better efficiency.
+Build RISC-V-supported benchmarks:
 
-### 5. Memory Bandwidth Benchmark
-This project tests memory bandwidth using C and assembly code. It includes a version for Linux that utilizes POSIX threads for multithreading, providing a robust framework for evaluating memory performance.
+```bash
+make compile_riscv
+```
 
-### 6. Memory Latency Benchmark
-The Memory Latency Benchmark measures memory latency across x86 and ARM architectures. It provides critical insights into the time required for memory operations, which is essential for understanding the performance characteristics of memory-intensive applications.
+Build a single subproject:
 
-## Build Instructions
+```bash
+make -C MemoryLatency compile_x86
+make -C MemoryLatency compile_riscv
+make -C AsmGen ARCH=x86
+```
 
-To build the entire suite, you can use the provided Makefile. The Makefile is designed to handle the compilation of all subprojects efficiently. Follow the steps below to build the projects:
+Clean generated binaries:
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://git.woa.com/leytonzhang/uArchTest.git 
-   cd uArchTest
-   ```
+```bash
+make clean
+```
 
-2. **Build the projects:**
-   ```bash
-   make
-   ```
+## Quick Smoke Tests
 
-3. **Clean the build:**
-   If you need to clean the build artifacts, you can run:
-   ```bash
-   make clean
-   ```
+These commands are intentionally tiny and should finish quickly:
 
-4. **Build specific subprojects:**
-   If you want to build a specific subproject, you can navigate to its directory and run:
-   ```bash
-   make
-   ```
+```bash
+./MemoryLatency/MemoryLatency_x86 -test c -sizekb 2 -iter 1000
+./MemoryLatency/MemoryLatency_x86 -test asm -sizekb 2 -iter 1000
+./MemoryBandwidth/MemoryBandwidth_x86 -threads 1 -private -sizekb 2 -data 1 -method scalar
+```
 
-## Usage
-
-Each subproject comes with its own set of instructions for usage. Please refer to the individual subproject directories for detailed documentation on how to run and utilize the tools effectively.
-
-## Contributing
-
-Contributions to uArchTest are welcome! If you have suggestions, improvements, or bug fixes, please feel free to submit a pull request or open an issue.
+Some tools run long by default. Use small iteration counts first, especially for
+`InstructionRate`, `CoreClockChecker`, and all-core coherency tests.
 
 ## License
 
-This project is licensed under the Apache-2.0 License. See the LICENSE file for more details.
-
-## Acknowledgments
-
-We would like to thank all contributors and the open-source community for their support and collaboration in making this project possible.
-
-## Original Author and Repository
-
-This project was originally developed by [ChipsandCheese]. You can find the original repository at: [https://github.com/ChipsandCheese/Microbenchmarks.git].
+This project is licensed under Apache-2.0. See `LICENSE`.

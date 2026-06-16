@@ -13,6 +13,8 @@
 *generatednasm*
 *_arm
 *_x86
+*_riscv
+uArchBin_*/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

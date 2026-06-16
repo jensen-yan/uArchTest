@@ -1,44 +1,91 @@
-# List of subdirectories
 SUBDIRS := AsmGen CoherencyLatency CoreClockChecker InstructionRate MemoryBandwidth MemoryLatency
+RISCV_SUBDIRS := AsmGen MemoryLatency
 
 CC := gcc
-# Cross-compilers
-CROSS_COMPILE_AARCH64 := aarch64-linux-gnu-
-CROSS_COMPILE_X86_64 := x86_64-linux-gnu-
+CROSS_COMPILE_AARCH64 ?= aarch64-linux-gnu-
+CROSS_COMPILE_X86_64 ?= x86_64-linux-gnu-
+CROSS_COMPILE_RISCV64 ?= riscv64-unknown-linux-gnu-
+RISCV_TOOLCHAIN ?=
 
-# Compiler flags
+DOTNET := $(shell command -v dotnet 2>/dev/null)
+ifeq ($(DOTNET),)
+BUILD_SUBDIRS := $(filter-out AsmGen,$(SUBDIRS))
+BUILD_RISCV_SUBDIRS := $(filter-out AsmGen,$(RISCV_SUBDIRS))
+SKIP_ASMGEN := yes
+else
+BUILD_SUBDIRS := $(SUBDIRS)
+BUILD_RISCV_SUBDIRS := $(RISCV_SUBDIRS)
+SKIP_ASMGEN := no
+endif
+
 CFLAGS := -O2
-
-# Linker flags
 LDFLAGS := -static -pthread -lm
 
-.PHONY: default all clean $(SUBDIRS)
+.PHONY: default all compile_all_arch compile_x86 compile_arm compile_riscv \
+	check-x86-64-compiler check-aarch64-compiler check-riscv64-compiler \
+	copy copy_x86 copy_arm copy_riscv clean $(SUBDIRS)
 
 default: all
 
-# Rule to check if x86-64 cross-compiler is installed
 check-x86-64-compiler:
 	@if ! command -v ${CROSS_COMPILE_X86_64}${CC} > /dev/null; then \
 		echo "x86-64 cross-compiler is not installed"; \
 		exit 1; \
 	fi
 	
-# Rule to check if aarch64 cross-compiler is installed
 check-aarch64-compiler:
 	@if ! command -v ${CROSS_COMPILE_AARCH64}${CC} > /dev/null; then \
 		echo "aarch64 cross-compiler is not installed"; \
 		exit 1; \
 	fi
 
-# Rule to compile subdirectories for x86
+check-riscv64-compiler:
+	@if [ -n "$(RISCV_TOOLCHAIN)" ]; then \
+		export PATH="$(RISCV_TOOLCHAIN):$$PATH"; \
+	fi; \
+	if ! command -v ${CROSS_COMPILE_RISCV64}${CC} > /dev/null; then \
+		echo "riscv64 cross-compiler is not installed"; \
+		echo "Set RISCV_TOOLCHAIN or CROSS_COMPILE_RISCV64 if it is installed in a non-standard path."; \
+		exit 1; \
+	fi
+
+all: compile_x86
+
+compile_all_arch: compile_x86 compile_arm compile_riscv
+
 compile_x86: check-x86-64-compiler
-	@$(MAKE) -j $(SUBDIRS) -C $@ compile_x86
+	@if [ "$(SKIP_ASMGEN)" = "yes" ]; then \
+		echo "Skipping AsmGen: dotnet CLI is not installed"; \
+	fi
+	@for dir in $(BUILD_SUBDIRS); do \
+		echo "==> $$dir: compile_x86"; \
+		$(MAKE) -C $$dir compile_x86 || exit $$?; \
+	done
 	@$(MAKE) copy_x86
 
-# Rule to compile subdirectories for ARM
 compile_arm: check-aarch64-compiler
-	@$(MAKE) -j $(SUBDIRS) -C $@ compile_arm
+	@if [ "$(SKIP_ASMGEN)" = "yes" ]; then \
+		echo "Skipping AsmGen: dotnet CLI is not installed"; \
+	fi
+	@for dir in $(BUILD_SUBDIRS); do \
+		echo "==> $$dir: compile_arm"; \
+		$(MAKE) -C $$dir compile_arm || exit $$?; \
+	done
 	@$(MAKE) copy_arm
+
+compile_riscv: check-riscv64-compiler
+	@if [ "$(SKIP_ASMGEN)" = "yes" ]; then \
+		echo "Skipping AsmGen: dotnet CLI is not installed"; \
+	fi
+	@for dir in $(BUILD_RISCV_SUBDIRS); do \
+		echo "==> $$dir: compile_riscv"; \
+		if [ -n "$(RISCV_TOOLCHAIN)" ]; then \
+			PATH="$(RISCV_TOOLCHAIN):$$PATH" $(MAKE) -C $$dir compile_riscv || exit $$?; \
+		else \
+			$(MAKE) -C $$dir compile_riscv || exit $$?; \
+		fi; \
+	done
+	@$(MAKE) copy_riscv
 
 copy_x86:
 	@mkdir -p uArchBin_x86
@@ -48,20 +95,17 @@ copy_arm:
 	@mkdir -p uArchBin_arm
 	@find . -path ./uArchBin_arm -prune -o -name "*_arm" -exec cp {} uArchBin_arm \;
 
-copy: copy_x86 copy_arm;
+copy_riscv:
+	@mkdir -p uArchBin_riscv
+	@find . -path ./uArchBin_riscv -prune -o -name "*_riscv" -exec cp {} uArchBin_riscv \;
 
+copy: copy_x86 copy_arm copy_riscv
 
-# Clean rule for subdirectories
 clean:
 	@for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean; \
 	done
-	@rm -rf uArchBin_x86 uArchBin_arm
+	@rm -rf uArchBin_x86 uArchBin_arm uArchBin_riscv
 
-# All rule to build all subdirectories
-all: $(SUBDIRS) 
-	@$(MAKE) copy
-
-# Implicit rule to build each subdirectory
 $(SUBDIRS):
 	$(MAKE) -C $@

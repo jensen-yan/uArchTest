@@ -1,5 +1,5 @@
 # AsmGen/Makefile - Simplified version
-.PHONY: default all separate clean help
+.PHONY: default all compile_x86 compile_arm compile_riscv separate clean help
 
 # Default target
 default: all
@@ -45,6 +45,15 @@ separate: check-dotnet
 		dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) --use-klib, \
 		dotnet run --separate --target-arch $(ARCH) --timing $(TIMING))
 	@$(MAKE) compile_separate
+
+compile_x86:
+	@$(MAKE) ARCH=x86 all
+
+compile_arm:
+	@$(MAKE) ARCH=arm all
+
+compile_riscv:
+	@$(MAKE) ARCH=riscv all
 
 # Compile generated combined tests
 compile:
