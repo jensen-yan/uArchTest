@@ -68,6 +68,8 @@ BenchmarkDotNet.Artifacts/
 # raw tables/manifests/logs in the working tree.
 results/**/*.tsv
 results/**/manifest.txt
+dramsim3*.json
+dramsim3*.txt
 
 # .NET Core
 project.lock.json

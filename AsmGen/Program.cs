@@ -31,6 +31,7 @@ namespace AsmGen
             string timingMode = "ns"; // Default to nanosecond timing
             bool useKlib = false; // Default to standard library
             string onlyPrefix = null;
+            List<string> rangeOverrides = new List<string>();
             
             for (int i = 0; i < args.Length; i++)
             {
@@ -56,6 +57,11 @@ namespace AsmGen
                 {
                     onlyPrefix = args[i + 1];
                     i++; // Skip the next argument as it's the test prefix filter
+                }
+                else if (args[i] == "--range" && i + 1 < args.Length)
+                {
+                    rangeOverrides.Add(args[i + 1]);
+                    i++; // Skip the next argument as it's the range override
                 }
                 else if (args[i] == "--help" || args[i] == "-h")
                 {
@@ -142,6 +148,11 @@ namespace AsmGen
                 Console.WriteLine($"Test Filter: {onlyPrefix} ({tests.Count} matched)");
             }
 
+            if (rangeOverrides.Count > 0)
+            {
+                ApplyRangeOverrides(tests, rangeOverrides);
+            }
+
             // Create generate directory
             string generateDir = "generate";
             if (!Directory.Exists(generateDir))
@@ -171,6 +182,7 @@ namespace AsmGen
             Console.WriteLine("  --target-arch <arch>        Target architecture: all, x86, arm, riscv (default: all)");
             Console.WriteLine("  --timing <mode>             Timing mode: ns, cycle (default: ns)");
             Console.WriteLine("  --only <prefix>             Generate tests whose prefix starts with this value");
+            Console.WriteLine("  --range <spec>              Override counts: low:high[:step] or prefix=low:high[:step]");
             Console.WriteLine("  --use-klib                  Use klib.h instead of standard library headers");
             Console.WriteLine("  --help, -h                  Show this help message");
             Console.WriteLine();
@@ -186,8 +198,80 @@ namespace AsmGen
             Console.WriteLine("  dotnet run                                           # Generate combined tests for all architectures (ns timing, std lib)");
             Console.WriteLine("  dotnet run --target-arch riscv --timing cycle       # Generate combined tests for RISC-V with cycle timing");
             Console.WriteLine("  dotnet run --target-arch riscv --timing cycle --only nopbw");
+            Console.WriteLine("  dotnet run --target-arch riscv --timing cycle --only ldq --range ldq=96:160:2");
             Console.WriteLine("  dotnet run --separate --target-arch x86 --use-klib  # Generate separate tests for x86 with klib");
             Console.WriteLine("  dotnet run --use-klib --timing cycle                # Generate combined tests with klib and cycle timing");
+        }
+
+        static void ApplyRangeOverrides(List<IUarchTest> tests, List<string> rangeOverrides)
+        {
+            foreach (string overrideSpec in rangeOverrides)
+            {
+                string targetPrefix = null;
+                string rangeSpec = overrideSpec;
+                int equalsIndex = overrideSpec.IndexOf('=');
+                if (equalsIndex >= 0)
+                {
+                    targetPrefix = overrideSpec.Substring(0, equalsIndex);
+                    rangeSpec = overrideSpec.Substring(equalsIndex + 1);
+                }
+
+                int[] counts = ParseRangeSpec(rangeSpec);
+                int matched = 0;
+                foreach (IUarchTest test in tests)
+                {
+                    if (targetPrefix != null &&
+                        !test.Prefix.StartsWith(targetPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (!(test is UarchTest rangedTest))
+                    {
+                        Console.WriteLine($"Warning: range override skipped for {test.Prefix}; test has no count array");
+                        continue;
+                    }
+
+                    rangedTest.Counts = counts;
+                    matched++;
+                    Console.WriteLine($"Range Override: {test.Prefix} = {counts[0]}:{counts[counts.Length - 1]} ({counts.Length} points)");
+                }
+
+                if (matched == 0)
+                {
+                    Console.WriteLine($"Error: no tests matched --range {overrideSpec}");
+                    Environment.Exit(1);
+                }
+            }
+        }
+
+        static int[] ParseRangeSpec(string rangeSpec)
+        {
+            string[] parts = rangeSpec.Split(':');
+            if (parts.Length < 2 || parts.Length > 3)
+            {
+                Console.WriteLine($"Error: invalid --range '{rangeSpec}', expected low:high[:step]");
+                Environment.Exit(1);
+            }
+
+            int low = 0;
+            int high = 0;
+            int step = 1;
+            if (!int.TryParse(parts[0], out low) ||
+                !int.TryParse(parts[1], out high) ||
+                (parts.Length == 3 && !int.TryParse(parts[2], out step)))
+            {
+                Console.WriteLine($"Error: invalid --range '{rangeSpec}', all range fields must be integers");
+                Environment.Exit(1);
+            }
+
+            if (low < 1 || high < low || step < 1)
+            {
+                Console.WriteLine($"Error: invalid --range '{rangeSpec}', require 1 <= low <= high and step >= 1");
+                Environment.Exit(1);
+            }
+
+            return UarchTestHelpers.GenerateCountArray(low, high, step);
         }
 
         static bool IsValidArchitecture(string arch)

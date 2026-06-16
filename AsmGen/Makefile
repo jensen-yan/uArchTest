@@ -9,6 +9,7 @@ CC := gcc
 TIMING ?= ns
 ARCH ?= all
 ONLY ?=
+RANGE ?=
 USE_KLIB ?= no
 DOTNET_CLI_HOME ?= /tmp/uarchtest-dotnet-home
 DOTNET_SKIP_FIRST_TIME_EXPERIENCE ?= 1
@@ -38,18 +39,18 @@ check-dotnet:
 
 # Generate and compile combined tests
 all: check-dotnet
-	@echo "Generating and compiling combined tests (arch: $(ARCH), timing: $(TIMING), only: $(if $(ONLY),$(ONLY),all), klib: $(USE_KLIB))..."
+	@echo "Generating and compiling combined tests (arch: $(ARCH), timing: $(TIMING), only: $(if $(ONLY),$(ONLY),all), range: $(if $(RANGE),$(RANGE),default), klib: $(USE_KLIB))..."
 	@$(if $(filter yes,$(USE_KLIB)), \
-		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) --use-klib, \
-		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),))
+		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) $(if $(RANGE),--range $(RANGE),) --use-klib, \
+		$(DOTNET_ENV) dotnet run --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) $(if $(RANGE),--range $(RANGE),))
 	@$(MAKE) compile
 
 # Generate and compile separate tests  
 separate: check-dotnet
-	@echo "Generating and compiling separate tests (arch: $(ARCH), timing: $(TIMING), only: $(if $(ONLY),$(ONLY),all), klib: $(USE_KLIB))..."
+	@echo "Generating and compiling separate tests (arch: $(ARCH), timing: $(TIMING), only: $(if $(ONLY),$(ONLY),all), range: $(if $(RANGE),$(RANGE),default), klib: $(USE_KLIB))..."
 	@$(if $(filter yes,$(USE_KLIB)), \
-		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) --use-klib, \
-		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),))
+		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) $(if $(RANGE),--range $(RANGE),) --use-klib, \
+		$(DOTNET_ENV) dotnet run --separate --target-arch $(ARCH) --timing $(TIMING) $(if $(ONLY),--only $(ONLY),) $(if $(RANGE),--range $(RANGE),))
 	@$(MAKE) compile_separate
 
 compile_x86:
@@ -118,6 +119,7 @@ help:
 	@echo "  ARCH     - Target architecture: all, x86, arm, riscv (default: all)"
 	@echo "  TIMING   - Timing mode: ns, cycle (default: ns)"
 	@echo "  ONLY     - Generate only tests with this prefix (for example: nopbw)"
+	@echo "  RANGE    - Override generated counts: low:high[:step] or prefix=low:high[:step]"
 	@echo "  USE_KLIB - Use klib instead of standard library: yes, no (default: no)"
 	@echo ""
 	@echo "Library modes:"
@@ -128,6 +130,7 @@ help:
 	@echo "  make                                    # Build combined tests for all architectures (std lib)"
 	@echo "  make ARCH=riscv TIMING=cycle            # Build combined RISC-V tests with cycle timing"
 	@echo "  make ARCH=riscv TIMING=cycle ONLY=nopbw # Build one small RISC-V test"
+	@echo "  make ARCH=riscv TIMING=cycle ONLY=ldq RANGE=ldq=96:160:2"
 	@echo "  make separate ARCH=x86 USE_KLIB=yes     # Build separate x86 tests with klib"
 	@echo "  make USE_KLIB=yes TIMING=cycle          # Build combined tests with klib and cycle timing"
 	@echo "  make clean                              # Clean all files"

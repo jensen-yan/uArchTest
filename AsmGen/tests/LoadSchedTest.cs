@@ -56,10 +56,10 @@ namespace AsmGen
             dependentLoads[3] = "  ld t2, 0(s1)";
 
             string[] dependentLoads1 = new string[4];
-            dependentLoads1[0] = "  ldr t5, 0(s2)";
-            dependentLoads1[1] = "  ldr t4, 0(s2)";
-            dependentLoads1[2] = "  ldr t3, 0(s2)";
-            dependentLoads1[3] = "  ldr t2, 0(s2)";
+            dependentLoads1[0] = "  ld t5, 0(s2)";
+            dependentLoads1[1] = "  ld t4, 0(s2)";
+            dependentLoads1[2] = "  ld t3, 0(s2)";
+            dependentLoads1[3] = "  ld t2, 0(s2)";
             UarchTestHelpers.GenerateRiscvAsmStructureTestFuncs(sb, this.Counts, this.Prefix, dependentLoads, dependentLoads1, false);
         }
     }
