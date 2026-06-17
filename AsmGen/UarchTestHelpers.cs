@@ -454,6 +454,11 @@ namespace AsmGen
                 if (fence)
                 {
                     sb.AppendLine("  fence iorw, iorw");
+                    // In gem5, ordinary RISC-V fence is a memory-ordering
+                    // barrier, not a dispatch-serializing lfence. fence.i has
+                    // SerializeAfter semantics and gives structure tests a loop
+                    // boundary closer to the x86 lfence version.
+                    sb.AppendLine("  fence.i");
                 }
 
                 sb.AppendLine("  addi a0, a0, -1");

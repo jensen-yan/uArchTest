@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>node037 Zen 4 uArch Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8f4;
+      --ink: #17211c;
+      --muted: #5f6b65;
+      --line: #d6ddd5;
+      --panel: #ffffff;
+      --teal: #0f8b8d;
+      --green: #4a8f3c;
+      --amber: #c6841d;
+      --rose: #c45161;
+      --blue: #3b6ea8;
+      --violet: #7a5ca8;
+      --shadow: 0 10px 26px rgba(29, 42, 35, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a { color: #0b6f71; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+    .shell {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .hero {
+      min-height: 260px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(115deg, rgba(15, 139, 141, 0.13), rgba(196, 81, 97, 0.09) 48%, rgba(198, 132, 29, 0.12)),
+        linear-gradient(0deg, #fff, #fff);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero h1 {
+      margin: 0;
+      max-width: 920px;
+      font-size: clamp(2rem, 4.8vw, 4.2rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 820px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 1.03rem;
+    }
+
+    .hero .tagrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid #cbd7d0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      color: #33413a;
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .summary {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .summary h2,
+    section h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #32433a;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-height: 88px;
+      padding: 12px;
+      border: 1px solid #dce3dd;
+      border-radius: 8px;
+      background: #fbfcfa;
+    }
+
+    .metric .value {
+      display: block;
+      font-size: 1.55rem;
+      line-height: 1.1;
+      font-weight: 750;
+      color: #11231d;
+    }
+
+    .metric .label {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 0 16px;
+      background: rgba(247, 248, 244, 0.94);
+      backdrop-filter: blur(10px);
+    }
+
+    nav a {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid #ced8d0;
+      border-radius: 999px;
+      background: #fff;
+      color: #24352e;
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+
+    section {
+      margin-top: 18px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .section-head p {
+      margin: 0;
+      max-width: 780px;
+      color: var(--muted);
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .chart-card {
+      border: 1px solid #dce3dd;
+      border-radius: 8px;
+      background: #fbfcfa;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .wide { grid-column: 1 / -1; }
+
+    .chart-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .chart-title h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .chart-title span {
+      color: var(--muted);
+      font-size: 0.84rem;
+      text-align: right;
+    }
+
+    canvas {
+      width: 100%;
+      height: 330px;
+      display: block;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    .mini-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      padding: 10px 9px;
+      border-bottom: 1px solid #e3e8e2;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      color: #33443c;
+      font-weight: 700;
+      background: #f3f7f2;
+    }
+
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 26px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .ok { color: #0d5c46; background: #e7f5ee; }
+    .warn { color: #805313; background: #fff2d6; }
+    .mixed { color: #783042; background: #fae4e9; }
+
+    .sources {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .source {
+      min-height: 120px;
+      padding: 14px;
+      border: 1px solid #dce3dd;
+      border-radius: 8px;
+      background: #fbfcfa;
+    }
+
+    .source strong { display: block; margin-bottom: 6px; }
+    .source p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .links a {
+      display: inline-flex;
+      min-height: 32px;
+      align-items: center;
+      padding: 4px 10px;
+      border: 1px solid #d5ddd6;
+      border-radius: 999px;
+      background: #fff;
+      text-decoration: none;
+      color: #0c6466;
+      font-size: 0.88rem;
+    }
+
+    .foot {
+      margin: 22px 0 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .shell { padding: 16px; }
+      header, .chart-grid, .sources { grid-template-columns: 1fr; }
+      .wide { grid-column: auto; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .section-head { flex-direction: column; }
+      canvas { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="hero">
+        <div>
+          <h1>node037 Zen 4 微架构实测面板</h1>
+          <p>把 AsmGen、MemoryLatency、MemoryBandwidth 和公开 Zen 4 逆向资料放在同一张图里看。重点不是堆 CSV，而是直接看哪些数对得上、哪些测试形状不能当容量计数器。</p>
+        </div>
+        <div class="tagrow">
+          <span class="tag">AMD EPYC 9684X</span>
+          <span class="tag">Genoa-X / Zen 4</span>
+          <span class="tag">2P · 192C · SMT2</span>
+          <span class="tag">3D V-Cache</span>
+          <span class="tag">2026-06-16</span>
+        </div>
+      </div>
+
+      <aside class="summary">
+        <h2>Key Numbers</h2>
+        <div class="metric-grid">
+          <div class="metric"><span class="value">4.0 cyc</span><span class="label">L1 dependent load</span></div>
+          <div class="metric"><span class="value">14.1 cyc</span><span class="label">L2 hit region</span></div>
+          <div class="metric"><span class="value">11.7/cyc</span><span class="label">NOP throughput</span></div>
+          <div class="metric"><span class="value">136/137</span><span class="label">public load in-flight / measured LDQ knee</span></div>
+          <div class="metric"><span class="value">365 GB/s</span><span class="label">socket0 3GB read, 96 threads</span></div>
+          <div class="metric"><span class="value">3.68GHz</span><span class="label">core0 steady boost median</span></div>
+        </div>
+      </aside>
+    </header>
+
+    <nav>
+      <a href="#latency">Latency</a>
+      <a href="#bandwidth">Bandwidth</a>
+      <a href="#asmgen">AsmGen</a>
+      <a href="#public">Public Compare</a>
+      <a href="#sources">Sources</a>
+    </nav>
+
+    <section id="latency">
+      <div class="section-head">
+        <div>
+          <h2>Memory Latency</h2>
+          <p>横轴用 log scale，2KB 到 1GB 才能放在一张图里。纵轴是 dependent pointer-chasing load 的 ns/load，右侧表格给出按 3.68GHz 换算的 cycles。</p>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card wide">
+          <div class="chart-title">
+            <h3>MemoryLatency asm curve</h3>
+            <span>log-x · ns/load · node0/core0</span>
+          </div>
+          <canvas id="latencyChart"></canvas>
+          <p class="mini-note">32KB 后离开 L1D；48KB 到 256KB 是清楚的 L2 平台；1MB 后进入更慢的下一级路径；1GB random latency 约 130ns。</p>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            <h3>TLB extra latency</h3>
+            <span>entries · extra ns</span>
+          </div>
+          <canvas id="tlbChart"></canvas>
+          <p class="mini-note">96 entries 附近出现第一个额外代价平台，640 entries 后进入第二个平台。这个图不宜直接读成单一 TLB 容量。</p>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            <h3>Latency anchors</h3>
+            <span>ns to cycles</span>
+          </div>
+          <table>
+            <thead><tr><th>Region</th><th class="num">ns</th><th class="num">cycles</th><th>Interpretation</th></tr></thead>
+            <tbody id="latencyTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="bandwidth">
+      <div class="section-head">
+        <div>
+          <h2>Bandwidth</h2>
+          <p>1GB 工作集会被 Genoa-X 的 1152MB/socket L3 影响，所以这里把 1GB V-Cache 聚合带宽和 3GB DRAM 读带宽分开看。</p>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">
+            <h3>Single-thread data bandwidth</h3>
+            <span>GB/s · selected sizes</span>
+          </div>
+          <canvas id="singleBwChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            <h3>Socket0 3GB read scaling</h3>
+            <span>AVX512 read · private</span>
+          </div>
+          <canvas id="threadBwChart"></canvas>
+          <p class="mini-note">96 物理核读到约 365GB/s，低于 460.8GB/s 理论峰值但已经是实际大工作集读带宽。</p>
+        </div>
+        <div class="chart-card wide">
+          <div class="chart-title">
+            <h3>Instruction fetch bandwidth</h3>
+            <span>NOP code block · GB/s</span>
+          </div>
+          <canvas id="instrChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="asmgen">
+      <div class="section-head">
+        <div>
+          <h2>AsmGen Capacity / Frontend</h2>
+          <p>LDQ、STQ、return stack 和 NOP 吞吐与公开逆向数据对得很好；ROB 和 BTB 的判读更微妙，网页里把“测试形状”单独标出来。</p>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">
+            <h3>BTB spacing sweep</h3>
+            <span>ns/branch · log-x</span>
+          </div>
+          <canvas id="btbChart"></canvas>
+          <p class="mini-note">`btb16` 最像公开分层：2048 前平，3072/4096 抬升，8192 仍可撑住，10240 大跳。</p>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            <h3>ROB NOP window</h3>
+            <span>ns/iteration · windows</span>
+          </div>
+          <canvas id="robChart"></canvas>
+          <p class="mini-note">当前 AsmGen `rob` 是 NOP 填充 + pointer chasing overlap，不适合当 320-entry ROB 计数器。</p>
+        </div>
+        <div class="chart-card wide">
+          <div class="chart-title">
+            <h3>AsmGen vs public data</h3>
+            <span>capacity / throughput checks</span>
+          </div>
+          <table>
+            <thead><tr><th>Item</th><th class="num">Measured</th><th class="num">Public</th><th>Status</th><th>Read</th></tr></thead>
+            <tbody id="asmCompareTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="public">
+      <div class="section-head">
+        <div>
+          <h2>Public Reverse Data Cross-check</h2>
+          <p>这里的公开数据主要来自 AMD 官方规格页和 Chips and Cheese 的 Zen 4 逆向分析。结论：大部分基础结构对得上；ROB/BTB 不是硬件不一致，而是测试形状导致不能用一个数字解释。</p>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Topic</th><th>Public reference</th><th>node037 result</th><th>Conclusion</th></tr></thead>
+        <tbody>
+          <tr><td>CPU identity</td><td>EPYC 9684X, 96C/192T, 1152MB L3/socket, DDR5-4800 12ch, 460.8GB/s/socket</td><td>2 sockets, 384 logical CPUs, total L3 ~2.3GiB</td><td><span class="status ok">match</span></td></tr>
+          <tr><td>L1D latency</td><td>Zen 4 L1D hit: 4 cycles</td><td>MemoryLatency 2KB: 1.094ns ~= 4.0 cycles; AsmGen loadlat ~= 4.04 cycles</td><td><span class="status ok">strong match</span></td></tr>
+          <tr><td>L2 latency</td><td>Zen 4 1MB L2: ~14 cycles</td><td>48KB-256KB platform: ~3.83ns ~= 14.1 cycles</td><td><span class="status ok">strong match</span></td></tr>
+          <tr><td>NOP frontend</td><td>Zen 4 can show about 12 NOP/cycle because NOPs are special</td><td>AsmGen perf run: ~11.7 NOP/cycle</td><td><span class="status ok">strong match</span></td></tr>
+          <tr><td>Load tracking</td><td>136 load operations in flight via load validation queue</td><td>LDQ pressure knee at x=137</td><td><span class="status ok">strong match</span></td></tr>
+          <tr><td>Store queue</td><td>64 store queue entries</td><td>STQ pressure knee at x~67</td><td><span class="status ok">match</span></td></tr>
+          <tr><td>Return stack</td><td>32 entries</td><td>returnstack slows after ~33</td><td><span class="status ok">match</span></td></tr>
+          <tr><td>BTB</td><td>L1 BTB usually 1024-2048, up to 3072 depending density; L2 BTB 8192</td><td>`btb16`: 3072/4096 starts rising, 10240 jumps; other spacing has conflict spikes</td><td><span class="status warn">layout-sensitive</span></td></tr>
+          <tr><td>ROB</td><td>Published ROB 320; pure NOP can measure far above because entries pack NOPs</td><td>AsmGen NOP-window scan rises smoothly to 2048, no 320 hard knee</td><td><span class="status mixed">test shape mismatch</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="sources">
+      <div class="section-head">
+        <div>
+          <h2>Sources / Raw Data</h2>
+          <p>网页里的图来自本地日志，公开对照来自 AMD 官方规格和 Chips and Cheese Zen 4 逆向文章。</p>
+        </div>
+      </div>
+      <div class="sources">
+        <div class="source">
+          <strong>AMD official EPYC 9684X</strong>
+          <p>核心数、L3、DDR5 通道、socket、理论内存带宽、3D V-Cache。</p>
+          <div class="links"><a href="https://www.amd.com/en/products/processors/server/epyc/4th-generation-9004-and-8004-series/amd-epyc-9684x.html">Open source</a></div>
+        </div>
+        <div class="source">
+          <strong>Chips and Cheese Zen 4 Part 1</strong>
+          <p>BTB、return stack、fetch/NOP、ROB、rename 和执行侧逆向数据。</p>
+          <div class="links"><a href="https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine">Open source</a></div>
+        </div>
+        <div class="source">
+          <strong>Chips and Cheese Zen 4 Part 2</strong>
+          <p>load/store queue、L1D/L2 latency、TLB 和内存子系统分析。</p>
+          <div class="links"><a href="https://chipsandcheese.com/p/amds-zen-4-part-2-memory-subsystem-and-conclusion">Open source</a></div>
+        </div>
+      </div>
+      <div class="links">
+        <a href="../asmgen_x86_node037_20260616/analysis.md">AsmGen analysis.md</a>
+        <a href="../x86_node037_memory_20260616/analysis.md">Memory/Core analysis.md</a>
+      </div>
+    </section>
+
+    <p class="foot">Generated from local uArchTest logs in `/nfs/home/yanyue/tests/uArchTest/results`.</p>
+  </div>
+
+  <script>
+    const CLOCK = 3.68;
+    const colors = {
+      teal: "#0f8b8d",
+      green: "#4a8f3c",
+      amber: "#c6841d",
+      rose: "#c45161",
+      blue: "#3b6ea8",
+      violet: "#7a5ca8",
+      gray: "#6f7b74"
+    };
+
+    const latency = [
+      [2,1.094430],[4,1.088393],[8,1.088346],[12,1.088203],[16,1.102867],[24,1.093039],
+      [32,1.209223],[48,3.818927],[64,3.808388],[96,3.819528],[128,3.833223],
+      [192,3.837570],[256,3.831704],[384,4.438842],[512,5.044050],[600,5.437359],
+      [768,6.943854],[1024,8.951379],[1536,12.252873],[2048,13.873813],[3072,15.399187],
+      [4096,16.419931],[5120,16.685074],[6144,17.049383],[8192,17.739439],[10240,18.342419],
+      [12288,19.011480],[16384,22.096230],[24567,26.719851],[32768,31.026335],
+      [65536,52.111309],[98304,80.056862],[131072,94.295326],[262144,112.292610],
+      [393216,119.993484],[524288,123.329872],[1048576,130.114609]
+    ];
+
+    const tlb = [
+      [2,0.001468],[4,0],[8,0.003347],[12,0],[16,0],[20,0.002081],[24,0.001674],
+      [28,0],[32,0],[36,0.002185],[40,0],[44,0],[48,0.007756],[64,0.004888],
+      [96,1.924554],[128,1.927544],[192,1.927701],[256,1.932053],[384,1.939741],
+      [512,1.937509],[640,4.976327],[768,5.035180],[896,4.950429],[1024,4.956893],
+      [1152,4.977674],[1280,4.967954],[1536,4.956696],[2048,4.970749],
+      [3072,6.218986],[4096,8.207443],[5120,10.995353],[6144,11.338770],[8192,12.686208]
+    ];
+
+    const singleBw = {
+      labels: ["2KB","32KB","1MB","32MB","256MB","1GB"],
+      series: [
+        {name: "read", color: colors.teal, values: [216.083542,207.961136,97.154289,86.136436,33.318436,32.984016]},
+        {name: "write", color: colors.rose, values: [114.375359,114.489525,89.199425,91.854736,34.760872,26.037374]},
+        {name: "copy", color: colors.amber, values: [225.255447,226.389587,211.339066,178.241043,99.508751,44.700748]}
+      ]
+    };
+
+    const threadBw3gb = [[1,34.017925],[2,62.006260],[4,119.022484],[8,186.396301],[16,260.431915],[32,264.124512],[48,286.968842],[64,332.960205],[96,365.242828]];
+    const instrBw = {
+      labels: ["2KB","32KB","256KB","1MB","8MB"],
+      series: [
+        {name: "instr8", color: colors.blue, values: [165.217972,110.804848,58.016689,53.765526,43.012901]},
+        {name: "instr4", color: colors.green, values: [164.828659,95.681580,58.103565,53.315350,44.181076]}
+      ]
+    };
+
+    const btbSeries = [
+      {name: "4B", color: colors.teal, values: [[512,0.494067],[1024,0.496868],[1536,0.352320],[2048,0.293322],[3072,0.307881],[4096,0.379647],[8192,0.498136],[10240,1.304250],[16384,3.298793],[32768,3.377805]]},
+      {name: "8B", color: colors.green, values: [[512,0.277738],[1024,0.420732],[1536,0.277055],[2048,0.278594],[3072,0.284923],[4096,0.329645],[8192,0.459677],[10240,1.668102],[16384,3.258705],[32768,3.370303]]},
+      {name: "16B", color: colors.amber, values: [[512,0.276970],[1024,0.277018],[1536,0.276900],[2048,0.280739],[3072,0.413664],[4096,0.784282],[8192,0.593737],[10240,2.568941],[16384,3.315024],[32768,3.309299]]},
+      {name: "32B", color: colors.rose, values: [[512,0.277588],[1024,0.277300],[1536,0.916931],[2048,0.432772],[3072,0.428168],[4096,0.768832],[8192,3.284271],[10240,3.342852],[16384,3.298346],[32768,3.362649]]},
+      {name: "64B", color: colors.violet, values: [[512,1.038829],[1024,0.488452],[1536,0.520731],[2048,0.662572],[3072,0.541733],[4096,0.828734],[8192,0.988174],[10240,2.611699],[16384,3.414190],[32768,3.559614]]}
+    ];
+
+    const robWindows = {
+      labels: ["4-256","260-512","516-768","772-1024","1028-1280","1284-1536","1540-1792","1796-2048"],
+      series: [{name: "ROB NOP window", color: colors.violet, values: [36.251666,41.333333,47.051667,53.350000,59.566666,68.833334,74.533333,81.185000]}]
+    };
+
+    const asmCompare = [
+      ["NOP throughput", "11.7/cyc", "~12/cyc", "strong match", "NOP 是特殊路径"],
+      ["LDQ / load in-flight", "x=137", "136", "strong match", "测到的是 pending-retire/load validation 侧"],
+      ["Store queue", "x≈67", "64", "match", "计数/阈值多几项很合理"],
+      ["Return stack", "~33", "32", "match", "单线程可用完整 return stack"],
+      ["BTB", "btb16: 3072/4096 抬，10240 跳", "L1 1024-3072, L2 8192", "layout-sensitive", "spacing 冲突不能压成单容量"],
+      ["ROB", "无 320 硬台阶", "320 entries", "test shape mismatch", "当前测试是 NOP window，不是混合 uop ROB"]
+    ];
+
+    const latencyAnchors = [
+      ["2KB", 1.094430, "L1D hit"],
+      ["48KB", 3.818927, "L2 hit begins"],
+      ["256KB", 3.831704, "L2 platform"],
+      ["1MB", 8.951379, "L2 edge / next level"],
+      ["8MB", 17.739439, "L3/on-chip"],
+      ["64MB", 52.111309, "large V-Cache pressure"],
+      ["1GB", 130.114609, "large random footprint"]
+    ];
+
+    function setupCanvas(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(640, Math.floor(rect.width * dpr));
+      canvas.height = Math.floor(rect.height * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return {ctx, w: rect.width, h: rect.height};
+    }
+
+    function niceTicks(max, count = 5) {
+      const raw = max / count;
+      const pow = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+      const step = [1, 2, 5, 10].find(v => v * pow >= raw) * pow;
+      const ticks = [];
+      for (let v = 0; v <= max + step * 0.5; v += step) ticks.push(v);
+      return ticks;
+    }
+
+    function drawLegend(ctx, series, x, y) {
+      ctx.font = "12px system-ui";
+      let px = x;
+      series.forEach(s => {
+        ctx.fillStyle = s.color;
+        ctx.fillRect(px, y - 8, 14, 3);
+        ctx.fillStyle = "#4f5f57";
+        ctx.fillText(s.name, px + 20, y - 4);
+        px += ctx.measureText(s.name).width + 52;
+      });
+    }
+
+    function lineChart(canvasId, series, opts = {}) {
+      const canvas = document.getElementById(canvasId);
+      const {ctx, w, h} = setupCanvas(canvas);
+      const m = {l: 58, r: 18, t: 24, b: 44};
+      const all = series.flatMap(s => s.values);
+      const xs = all.map(d => d[0]);
+      const ys = all.map(d => d[1]);
+      const minX = opts.minX ?? Math.min(...xs);
+      const maxX = opts.maxX ?? Math.max(...xs);
+      const maxY = opts.maxY ?? Math.max(...ys) * 1.12;
+      const xMap = x => {
+        if (opts.logX) {
+          const a = Math.log10(minX), b = Math.log10(maxX);
+          return m.l + (Math.log10(x) - a) / (b - a) * (w - m.l - m.r);
+        }
+        return m.l + (x - minX) / (maxX - minX) * (w - m.l - m.r);
+      };
+      const yMap = y => h - m.b - y / maxY * (h - m.t - m.b);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#dfe6df";
+      ctx.lineWidth = 1;
+      const ticks = niceTicks(maxY, 5);
+      ctx.font = "12px system-ui";
+      ctx.fillStyle = "#68756f";
+      ticks.forEach(t => {
+        const y = yMap(t);
+        ctx.beginPath();
+        ctx.moveTo(m.l, y);
+        ctx.lineTo(w - m.r, y);
+        ctx.stroke();
+        ctx.fillText(t.toFixed(t < 10 ? 1 : 0), 8, y + 4);
+      });
+
+      const xTicks = opts.xTicks || (opts.logX ? [minX, 32, 1024, 32768, maxX].filter((v, i, a) => v >= minX && v <= maxX && a.indexOf(v) === i) : xs);
+      xTicks.forEach(t => {
+        const x = xMap(t);
+        ctx.strokeStyle = "#eef2ee";
+        ctx.beginPath();
+        ctx.moveTo(x, m.t);
+        ctx.lineTo(x, h - m.b);
+        ctx.stroke();
+        ctx.fillStyle = "#68756f";
+        ctx.textAlign = "center";
+        ctx.fillText(opts.xFormat ? opts.xFormat(t) : String(t), x, h - 16);
+      });
+      ctx.textAlign = "left";
+
+      if (opts.markers) {
+        opts.markers.forEach(marker => {
+          const x = xMap(marker.x);
+          ctx.strokeStyle = marker.color || "#b9c4bd";
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(x, m.t);
+          ctx.lineTo(x, h - m.b);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = marker.color || "#697770";
+          ctx.fillText(marker.label, x + 5, m.t + 14);
+        });
+      }
+
+      series.forEach(s => {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        s.values.forEach((d, i) => {
+          const x = xMap(d[0]), y = yMap(d[1]);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.fillStyle = s.color;
+        s.values.forEach(d => {
+          const x = xMap(d[0]), y = yMap(d[1]);
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
+      if (opts.referenceLines) {
+        opts.referenceLines.forEach(ref => {
+          const y = yMap(ref.y);
+          ctx.strokeStyle = ref.color || "#999";
+          ctx.setLineDash([6, 5]);
+          ctx.beginPath();
+          ctx.moveTo(m.l, y);
+          ctx.lineTo(w - m.r, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = ref.color || "#666";
+          ctx.fillText(ref.label, m.l + 8, y - 6);
+        });
+      }
+
+      drawLegend(ctx, series, m.l, 18);
+    }
+
+    function groupedBar(canvasId, data, opts = {}) {
+      const canvas = document.getElementById(canvasId);
+      const {ctx, w, h} = setupCanvas(canvas);
+      const m = {l: 54, r: 18, t: 26, b: 48};
+      const maxY = opts.maxY || Math.max(...data.series.flatMap(s => s.values)) * 1.15;
+      const yMap = y => h - m.b - y / maxY * (h - m.t - m.b);
+      const groupW = (w - m.l - m.r) / data.labels.length;
+      const barW = Math.max(6, Math.min(22, groupW / (data.series.length + 1.5)));
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#dfe6df";
+      ctx.font = "12px system-ui";
+      ctx.fillStyle = "#68756f";
+      niceTicks(maxY, 5).forEach(t => {
+        const y = yMap(t);
+        ctx.beginPath();
+        ctx.moveTo(m.l, y);
+        ctx.lineTo(w - m.r, y);
+        ctx.stroke();
+        ctx.fillText(t.toFixed(0), 10, y + 4);
+      });
+      data.labels.forEach((label, i) => {
+        const cx = m.l + groupW * i + groupW / 2;
+        ctx.fillStyle = "#68756f";
+        ctx.textAlign = "center";
+        ctx.fillText(label, cx, h - 18);
+        data.series.forEach((s, j) => {
+          const x = cx - (data.series.length * barW) / 2 + j * barW;
+          const y = yMap(s.values[i]);
+          ctx.fillStyle = s.color;
+          ctx.fillRect(x, y, barW - 2, h - m.b - y);
+        });
+      });
+      ctx.textAlign = "left";
+      drawLegend(ctx, data.series, m.l, 18);
+    }
+
+    function renderTables() {
+      document.getElementById("latencyTable").innerHTML = latencyAnchors.map(([region, ns, note]) => (
+        `<tr><td>${region}</td><td class="num">${ns.toFixed(3)}</td><td class="num">${(ns * CLOCK).toFixed(1)}</td><td>${note}</td></tr>`
+      )).join("");
+      document.getElementById("asmCompareTable").innerHTML = asmCompare.map(([item, measured, pub, status, read]) => {
+        const cls = status.includes("strong") || status === "match" ? "ok" : status.includes("mismatch") ? "mixed" : "warn";
+        return `<tr><td>${item}</td><td class="num">${measured}</td><td class="num">${pub}</td><td><span class="status ${cls}">${status}</span></td><td>${read}</td></tr>`;
+      }).join("");
+    }
+
+    function drawAll() {
+      lineChart("latencyChart", [{name: "asm latency", color: colors.teal, values: latency}], {
+        logX: true,
+        maxY: 140,
+        xTicks: [2, 32, 1024, 32768, 1048576],
+        xFormat: x => x >= 1024 ? `${x/1024}MB` : `${x}KB`,
+        markers: [
+          {x: 32, label: "L1D 32KB", color: colors.green},
+          {x: 1024, label: "L2 1MB", color: colors.amber},
+          {x: 98304, label: "CCD L3~96MB", color: colors.rose}
+        ]
+      });
+      lineChart("tlbChart", [{name: "extra latency", color: colors.rose, values: tlb}], {
+        logX: true,
+        maxY: 14,
+        xTicks: [64, 96, 512, 640, 2048, 8192],
+        xFormat: x => String(x)
+      });
+      groupedBar("singleBwChart", singleBw, {maxY: 250});
+      lineChart("threadBwChart", [
+        {name: "3GB read", color: colors.teal, values: threadBw3gb}
+      ], {
+        maxY: 500,
+        xTicks: [1,2,4,8,16,32,48,64,96],
+        referenceLines: [{y: 460.8, label: "AMD theoretical/socket 460.8GB/s", color: colors.rose}]
+      });
+      groupedBar("instrChart", instrBw, {maxY: 180});
+      lineChart("btbChart", btbSeries, {
+        logX: true,
+        maxY: 3.8,
+        xTicks: [512,1024,2048,3072,4096,8192,10240,32768],
+        xFormat: x => String(x),
+        markers: [
+          {x: 3072, label: "L1 upper", color: colors.amber},
+          {x: 8192, label: "L2 BTB", color: colors.green}
+        ]
+      });
+      groupedBar("robChart", robWindows, {maxY: 90});
+    }
+
+    renderTables();
+    drawAll();
+    window.addEventListener("resize", () => {
+      clearTimeout(window.__resizeTimer);
+      window.__resizeTimer = setTimeout(drawAll, 120);
+    });
+  </script>
+</body>
+</html>
