@@ -94,6 +94,22 @@ These commands are intentionally tiny and should finish quickly:
 Some tools run long by default. Use small iteration counts first, especially for
 `InstructionRate`, `CoreClockChecker`, and all-core coherency tests.
 
+## Result Notes
+
+Curated analysis notes are kept under `results/`; raw TSV/log/manifest files are
+left untracked by default.
+
+- GEM5 ideal_kmhv3 AsmGen basic throughput/latency:
+  [results/gem5_se_ideal_basic_pf_iter10_current_20260617/analysis.md](results/gem5_se_ideal_basic_pf_iter10_current_20260617/analysis.md)
+- GEM5 ideal_kmhv3 AsmGen capacity points:
+  [results/gem5_se_ideal_capacity_points_20260617/analysis.md](results/gem5_se_ideal_capacity_points_20260617/analysis.md)
+- GEM5 branch/MDP probes:
+  [results/gem5_se_ideal_capacity_branch_mdp_20260617/analysis.md](results/gem5_se_ideal_capacity_branch_mdp_20260617/analysis.md)
+- Zen 4 node037 AsmGen baseline:
+  [results/asmgen_x86_node037_20260616/analysis.md](results/asmgen_x86_node037_20260616/analysis.md)
+- Zen 4 node037 memory baseline:
+  [results/x86_node037_memory_20260616/analysis.md](results/x86_node037_memory_20260616/analysis.md)
+
 ## License
 
 This project is licensed under Apache-2.0. See `LICENSE`.
