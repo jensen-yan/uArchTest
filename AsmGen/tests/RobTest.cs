@@ -29,7 +29,9 @@ namespace AsmGen
 
         public override void GenerateRiscvAsm(StringBuilder sb)
         {
-            UarchTestHelpers.GenerateRiscvAsmStructureTestFuncs(sb, this.Counts, this.Prefix, nops, nops, true);
+            string[] robFillers = new string[] { "  add x0, t5, t4" };
+            UarchTestHelpers.GenerateRiscvAsmBlockedStructureTestFuncs(
+                sb, this.Counts, this.Prefix, robFillers, null, 12);
         }
     }
 }

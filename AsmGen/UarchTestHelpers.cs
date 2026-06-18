@@ -511,6 +511,49 @@ namespace AsmGen
                 fillerFunc2);
         }
 
+        public static string GenerateRiscvDivBlocker(int divCount, string addressDestReg = null)
+        {
+            StringBuilder blocker = new StringBuilder();
+            blocker.AppendLine("  li t0, 1234567");
+            blocker.AppendLine("  li t1, 3");
+            for (int i = 0; i < divCount; i++)
+            {
+                blocker.AppendLine("  divu t0, t0, t1");
+            }
+            if (addressDestReg != null)
+            {
+                blocker.AppendLine("  andi t0, t0, 0");
+                blocker.AppendLine($"  add {addressDestReg}, a1, t0");
+            }
+            return blocker.ToString();
+        }
+
+        public static void GenerateRiscvAsmBlockedStructureTestFuncs(StringBuilder sb,
+            int[] counts,
+            string funcNamePrefix,
+            string[] fillerInstrs,
+            string initInstrs = null,
+            int divCount = 4,
+            string addressDestReg = null,
+            bool fence = true,
+            Action<StringBuilder, string, int> fillerFunc = null)
+        {
+            GenerateRiscvAsmThroughputTestFuncs(sb,
+                counts,
+                funcNamePrefix,
+                fillerInstrs,
+                fillerInstrs,
+                false,
+                initInstrs,
+                null,
+                null,
+                GenerateRiscvDivBlocker(divCount, addressDestReg),
+                null,
+                fence,
+                fillerFunc,
+                fillerFunc);
+        }
+
         public static void GenerateRiscvAsmJumpSchedTestFuncs(StringBuilder sb,
             int[] counts,
             string funcNamePrefix,

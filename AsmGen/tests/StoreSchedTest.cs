@@ -60,7 +60,8 @@ namespace AsmGen
             dependentLoads1[1] = "  sd t5, 8(s2)";
             dependentLoads1[2] = "  sd t5, 8(s2)";
             dependentLoads1[3] = "  sd t5, 8(s2)";
-            UarchTestHelpers.GenerateRiscvAsmStructureTestFuncs(sb, this.Counts, this.Prefix, dependentLoads, dependentLoads1, false);
+            UarchTestHelpers.GenerateRiscvAsmBlockedStructureTestFuncs(
+                sb, this.Counts, this.Prefix, dependentLoads, null, 4, "s1");
         }
     }
 }

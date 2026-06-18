@@ -37,11 +37,12 @@ namespace AsmGen
         public override void GenerateRiscvAsm(StringBuilder sb)
         {
             string[] unrolledAdds = new string[4];
-            unrolledAdds[0] = "  add t5, t5, t1";
-            unrolledAdds[1] = "  add t4, t4, t1";
-            unrolledAdds[2] = "  add t3, t3, t1";
-            unrolledAdds[3] = "  add t2, t2, t1";
-            UarchTestHelpers.GenerateRiscvAsmStructureTestFuncs(sb, this.Counts, this.Prefix, unrolledAdds, unrolledAdds, true);
+            unrolledAdds[0] = "  add t5, t1, t6";
+            unrolledAdds[1] = "  add t4, t1, t6";
+            unrolledAdds[2] = "  add t3, t1, t6";
+            unrolledAdds[3] = "  add t2, t1, t6";
+            UarchTestHelpers.GenerateRiscvAsmBlockedStructureTestFuncs(
+                sb, this.Counts, this.Prefix, unrolledAdds, null, 8);
         }
     }
 }

@@ -20,6 +20,15 @@ declare -A RANGES=(
     [storeaddrsched]=20:56:2
     [storedatasched]=20:56:2
     [mixloadstoresched]=32:96:2
+    [intrf]=128:256:4
+    [fprf]=160:320:4
+    [faddsched]=40:112:2
+    [fmulsched]=40:112:2
+    [jmpsched]=32:96:2
+    [ftq]=32:96:2
+    [brq]=32:96:2
+    [mdp]=32:160:4
+    [returnstack]=1:96:1
 )
 
 if [ "$#" -gt 0 ]; then

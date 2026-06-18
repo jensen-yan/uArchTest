@@ -38,11 +38,18 @@ namespace AsmGen
         public override void GenerateRiscvAsm(StringBuilder sb)
         {
             string[] unrolledAdds = new string[4];
-            unrolledAdds[0] = "  fadd.s f2, f2, f1";
-            unrolledAdds[1] = "  fadd.s f3, f3, f1";
-            unrolledAdds[2] = "  fadd.s f4, f4, f1";
-            unrolledAdds[3] = "  fadd.s f5, f5, f1";
-            UarchTestHelpers.GenerateRiscvAsmFpSchedTestFuncs(sb, this.Counts, this.Prefix, unrolledAdds, unrolledAdds);
+            unrolledAdds[0] = "  fadd.s f2, f0, f1";
+            unrolledAdds[1] = "  fadd.s f3, f0, f1";
+            unrolledAdds[2] = "  fadd.s f4, f0, f1";
+            unrolledAdds[3] = "  fadd.s f5, f0, f1";
+            string initInstrs = "  flw f0, 0(a1)\n" +
+                "  flw f1, 4(a1)\n" +
+                "  flw f2, 4(a1)\n" +
+                "  flw f3, 8(a1)\n" +
+                "  flw f4, 12(a1)\n" +
+                "  flw f5, 16(a1)\n";
+            UarchTestHelpers.GenerateRiscvAsmBlockedStructureTestFuncs(
+                sb, this.Counts, this.Prefix, unrolledAdds, initInstrs, 4);
         }
     }
 }
